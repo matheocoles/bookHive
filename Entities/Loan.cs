@@ -8,7 +8,7 @@ public class Loan
     public DateTime Date { get; set; }
     public DateOnly LoanDate { get; set; }
     public DateOnly DueDate { get; set; }
-    public DateOnly ReturnDate { get; set; }
+    public DateOnly? ReturnDate { get; set; }
     
     public Book? Book { get; set; }
     public Member? Member { get; set; }
