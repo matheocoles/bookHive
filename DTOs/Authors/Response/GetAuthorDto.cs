@@ -1,6 +1,8 @@
+using FastEndpoints;
+
 namespace BookHive.DTOs.Authors.Response;
 
-public class GetAuthorDto
+public class GetAuthorDto : IMapper
 {
     public int Id { get; set; }
     public string? FirstName { get; set; }

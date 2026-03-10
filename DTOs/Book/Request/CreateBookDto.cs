@@ -8,4 +8,6 @@ public class CreateBookDto
     public int PageCount { get; set; }
     public DateOnly PublishedDate { get; set; }
     public string? Genre { get; set; }
+    
+    public int? AuthorId { get; set; }
 }
