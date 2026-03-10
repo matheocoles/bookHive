@@ -30,6 +30,10 @@ public class UpdateBookDtoValidator : Validator<UpdateBookDto>
             .NotEmpty()
             .Must(d => d <= DateOnly.FromDateTime(DateTime.Now))
             .WithMessage("La date de publication ne peut pas être dans le futur");
+        
+        RuleFor(x => x.Genre)
+            .NotEmpty()
+            .MaximumLength(50);
 
         RuleFor(x => x.AuthorId)
             .GreaterThan(0);
