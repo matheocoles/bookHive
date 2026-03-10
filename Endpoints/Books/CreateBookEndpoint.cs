@@ -1,4 +1,4 @@
-using BookHive.Data;
+using BookHive;
 using BookHive.DTOs.Book.Request;
 using BookHive.DTOs.Book.Response;
 using BookHive.Entities;

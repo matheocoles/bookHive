@@ -1,7 +1,7 @@
 using BookHive.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace BookHive.Data;
+namespace BookHive;
 
 public class BookHiveDbContext : DbContext
 {

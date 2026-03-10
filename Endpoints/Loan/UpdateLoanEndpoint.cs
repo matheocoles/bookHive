@@ -1,4 +1,4 @@
-using BookHive.Data;
+using BookHive;
 using BookHive.DTOs.Loan.Request;
 using BookHive.DTOs.Loan.Response;
 using BookHive.Entities;

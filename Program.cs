@@ -1,4 +1,4 @@
-using BookHive.Data;
+using BookHive;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 
