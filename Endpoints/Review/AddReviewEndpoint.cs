@@ -8,7 +8,7 @@ namespace BookHive.Endpoints.Review;
 
 public class AddReviewEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<CreateReviewDto, GetReviewDto>
 {
-    public override void Configure() => Post("/api/books/{bookId}/reviews");
+    public override void Configure() => Post("/books/{bookId}/reviews");
 
     public override async Task HandleAsync(CreateReviewDto req, CancellationToken ct)
     {

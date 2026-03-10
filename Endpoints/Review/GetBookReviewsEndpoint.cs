@@ -9,7 +9,7 @@ public class GetBookReviewsEndpoint(BookHiveDbContext bookHiveDbContext) : Endpo
 {
     public override void Configure()
     {
-        Get("/api/books/{bookId}/reviews"); // Route demandée 
+        Get("/books/{bookId}/reviews"); // Route demandée 
         AllowAnonymous();
     }
 

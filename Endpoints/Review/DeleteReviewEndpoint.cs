@@ -6,7 +6,7 @@ namespace BookHive.Endpoints.Review;
 
 public class DeleteReviewEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<GetReviewDto>
 {
-    public override void Configure() => Delete("/api/reviews/{id}");
+    public override void Configure() => Delete("/reviews/{id}");
 
     public override async Task HandleAsync(GetReviewDto req, CancellationToken ct)
     {

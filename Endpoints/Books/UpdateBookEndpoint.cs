@@ -12,7 +12,7 @@ public class UpdateBookEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<
 {
     public override void Configure()
     {
-        Put("/api/books/{id}");
+        Put("/books/{id}");
         AllowAnonymous();
     }
 
