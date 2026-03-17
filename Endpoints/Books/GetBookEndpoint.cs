@@ -1,44 +1,32 @@
+using AutoMapper;
 using BookHive;
-using BookHive.DTOs.Authors.Response;
 using BookHive.DTOs.Book.Response;
 using BookHive.Entities;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Books;
 
-public class GetBookEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<GetBookDto>
+public class GetBookEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : Endpoint<GetBookDto>
 {
     public override void Configure()
     {
-        Get("/books/{@id}", x => new { x.Id });
+        Get("/api/books/{id}");
+        AllowAnonymous();
     }
 
     public override async Task HandleAsync(GetBookDto req, CancellationToken ct)
     {
-        Book? book = await bookHiveDbContext
-            .Books
-            .Include(b => b.Author)
-            .SingleOrDefaultAsync(b => b.Id == req.Id, cancellationToken: ct);
+        var book = await bookHiveDbContext.Books
+            .Include(b => b.Author) 
+            .Include(b => b.Reviews) 
+            .FirstOrDefaultAsync(b => b.Id == req.Id, ct);
 
-        if (book == null)
-        {
-            await Send.NotFoundAsync(ct);
-            return;
-        }
+        if (book == null) { await Send.NotFoundAsync(ct); return; }
 
-        GetBookDto responseDto = new()
-        {
-            Id = req.Id,
-            Title = book.Title,
-            Isbn = book.Isbn,
-            Summary = book.Summary,
-            PageCount = book.PageCount,
-            PublishedDate = book.PublishedDate,
-            Genre = book.Genre,
-            AuthorId = book.AuthorId,
-        };
-
-        await Send.OkAsync(responseDto, ct);
+        var response = mapper.Map<GetBookDto>(book);
+        
+        await Send.OkAsync(response, cancellation: ct);
     }
 }
