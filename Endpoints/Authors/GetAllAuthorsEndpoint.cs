@@ -2,10 +2,11 @@ using BookHive;
 using BookHive.DTOs.Authors.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Authors;
 
-public class GetAllAuthorsEndpoint(BookHiveDbContext bookHiveDbContext) : EndpointWithoutRequest<List<GetAuthorDto>>
+public class GetAllAuthorsEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : EndpointWithoutRequest<List<GetAuthorDto>>
 {
     public override void Configure()
     {
@@ -15,19 +16,10 @@ public class GetAllAuthorsEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoi
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        List<GetAuthorDto> responseDto = await bookHiveDbContext.Authors
-            .Select(a => new GetAuthorDto
-                {
-                    Id = a.Id,
-                    FirstName = a.FirstName,
-                    LastName = a.LastName,
-                    Biography = a.Biography,
-                    BirthDate = a.BirthDate,
-                    Nationality = a.Nationality,
+        var authors = await bookHiveDbContext.Authors.ToListAsync(ct);
 
-                }
-            ).ToListAsync(ct);
+        var response = mapper.Map<List<GetAuthorDto>>(authors);
         
-        await Send.OkAsync(responseDto, ct);
+        await Send.OkAsync(response, cancellation: ct);
     }
 }

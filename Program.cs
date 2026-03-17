@@ -12,6 +12,8 @@ builder.Services.AddFastEndpoints().SwaggerDocument(options =>
 
 builder.Services.AddDbContext<BookHiveDbContext>();
 
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
 WebApplication app = builder.Build();
 
 app.UseHttpsRedirection();

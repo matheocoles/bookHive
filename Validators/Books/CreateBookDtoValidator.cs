@@ -14,10 +14,7 @@ public class CreateBookDtoValidator : Validator<CreateBookDto>
             .MaximumLength(200)
             .WithMessage("Le titre ne doit pas dépasser 200 caractères.");
 
-        RuleFor(x => x.Isbn)
-            .NotEmpty()
-            .Matches(@"^\d{13}$")
-            .WithMessage("L'ISBN doit contenir 13 chiffres");
+        RuleFor(x => x.Isbn)!.IsValidISBN13();
 
         RuleFor(x => x.PageCount)
             .GreaterThan(0);

@@ -1,41 +1,34 @@
-using BookHive;
 using BookHive.DTOs.Authors.Response;
 using BookHive.Entities;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Authors;
 
-public class GetAuthorsEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<GetAuthorDto>
+public class GetAuthorsEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : Endpoint<GetAuthorDto>
 {
     public override void Configure()
     {
-        Get("/authors/{@id}", x => new { x.Id });
+        Get("/api/authors/{id}");
+        AllowAnonymous();
     }
 
     public override async Task HandleAsync(GetAuthorDto req, CancellationToken ct)
     {
         Author? author = await bookHiveDbContext
             .Authors
+            .Include(a => a.Books)
             .SingleOrDefaultAsync(a => a.Id == req.Id, cancellationToken: ct);
 
         if (author == null)
         {
-            Console.WriteLine($"Aucun author avec l'ID {req.Id} trouvé.");
             await Send.NotFoundAsync(ct);
             return;
         }
 
-        GetAuthorDto responseDto = new()
-        {
-            Id = req.Id,
-            LastName = author.LastName,
-            FirstName = author.FirstName,
-            BirthDate = author.BirthDate,
-            Biography =  author.Biography,
-            Nationality = author.Nationality,
-        };
+        var responseDto = mapper.Map<GetAuthorDto>(author);
 
-        await Send.OkAsync(responseDto, ct);
+        await Send.OkAsync(responseDto, cancellation: ct);
     }
 }

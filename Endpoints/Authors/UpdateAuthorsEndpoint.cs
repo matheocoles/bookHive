@@ -4,46 +4,27 @@ using BookHive.DTOs.Authors.Response;
 using BookHive.Entities;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Authors;
 
-public class UpdateAuthorsEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<UpdateAuthorsDto, GetAuthorDto>
+public class UpdateAuthorsEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : Endpoint<UpdateAuthorsDto, GetAuthorDto>
 {
     public override void Configure()
     {
         Put("/authors/{@id}", x => new {x.Id});
     }
 
-    public override async Task HandleAsync(UpdateAuthorsDto request, CancellationToken ct)
+    public override async Task HandleAsync(UpdateAuthorsDto req, CancellationToken ct)
     {
-        Author? authorToEdit = await bookHiveDbContext
-            .Authors
-            .SingleOrDefaultAsync(a => a.Id == request.Id, cancellationToken: ct);
+        var author = await bookHiveDbContext.Authors.FindAsync([req.Id], ct);
+        if (author == null) { await Send.NotFoundAsync(ct); return; }
 
-        if (authorToEdit == null)
-        {
-            await Send.NotFoundAsync(ct);
-            return;
-        }
-        
-        authorToEdit.LastName = request.LastName;
-        authorToEdit.FirstName = request.FirstName;
-        authorToEdit.BirthDate = request.BirthDate;
-        authorToEdit.Biography = request.Biography;
-        authorToEdit.Nationality = request.Nationality;
-        
+        mapper.Map(req, author);
+
         await bookHiveDbContext.SaveChangesAsync(ct);
 
-        GetAuthorDto responseDto = new()
-        {
-            Id = request.Id,
-            LastName = request.LastName,
-            FirstName = request.FirstName,
-            BirthDate = request.BirthDate,
-            Biography = request.Biography,
-            Nationality = request.Nationality,
-        };
-        
-        await Send.OkAsync(responseDto, ct);
+        var response = mapper.Map<GetAuthorDto>(author);
+        await Send.OkAsync(response, cancellation: ct);
     }
 }

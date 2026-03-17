@@ -10,5 +10,7 @@ public class GetBookDto
     public DateOnly PublishedDate { get; set; }
     public string? Genre { get; set; }
     
+    public string AuthorFullName { get; set; } = string.Empty;
+    
     public int? AuthorId { get; set; }
 }

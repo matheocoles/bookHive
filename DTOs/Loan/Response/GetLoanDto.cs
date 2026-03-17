@@ -9,4 +9,7 @@ public class GetLoanDto
     public DateOnly LoanDate { get; set; }
     public DateOnly DueDate { get; set; }
     public DateOnly? ReturnDate { get; set; }
+    
+    public string BookTitle { get; set; } = string.Empty;
+    public string MemberFullName { get; set; } = string.Empty;
 }

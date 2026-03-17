@@ -12,7 +12,8 @@ public class CreateReviewDtoValidator : Validator<CreateReviewDto>
             .GreaterThan(0);
 
         RuleFor(x => x.Rating)
-            .InclusiveBetween(1, 5);
+            .InclusiveBetween(1, 5)
+            .WithMessage(x => $"La note {x.Rating} est invalide. Elle doit être comprise entre 1 et 5.");
 
         When(x => x.Comment != null, () => {
             RuleFor(x => x.Comment).MaximumLength(1000);
