@@ -3,10 +3,11 @@ using BookHive.DTOs.Loan.Request;
 using BookHive.DTOs.Loan.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Loan;
 
-public class CreateLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<CreateLoanDto, GetLoanDto>
+public class CreateLoanEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) :Endpoint<CreateLoanDto, GetLoanDto>
 {
     public override void Configure()
     {
@@ -15,8 +16,8 @@ public class CreateLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<C
 
     public override async Task HandleAsync(CreateLoanDto req, CancellationToken ct)
     {
-        var members = await bookHiveDbContext.Members.FindAsync([req.MemberId], ct);
-        if (members == null || !members.IsActive)
+        var member = await bookHiveDbContext.Members.FindAsync([req.MemberId], ct);
+        if (member == null || !member.IsActive)
         {
             ThrowError("Un membre inactif ou inexistant ne peut pas emprunter de livre.", 403);
             return;
@@ -29,56 +30,26 @@ public class CreateLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<C
             return;
         }
         
-        var daysDiff = req.DueDate.ToDateTime(TimeOnly.MinValue).Subtract(req.LoanDate.ToDateTime(TimeOnly.MinValue)).Days;
+        var daysDiff = req.DueDate.ToDateTime(TimeOnly.MinValue)
+            .Subtract(req.LoanDate.ToDateTime(TimeOnly.MinValue)).Days;
+            
         if (daysDiff < 1 || daysDiff > 30)
         {
             ThrowError("La date de retour doit être comprise entre 1 et 30 jours après la date d'emprunt.", 400);
             return;
         }
-        
-        var book = await bookHiveDbContext.Books
-            .FirstOrDefaultAsync(b => b.Id == req.BookId, ct);
 
-        if (book == null)
-        {
-            await Send.NotFoundAsync();
-            return;
-        }
-
-        var member = await bookHiveDbContext.Members
-            .SingleOrDefaultAsync(b => b.Id == req.MemberId, ct);
-
-        if (member == null)
-        {
-            await Send.NotFoundAsync();
-            return;
-        }
-
-        var plannedReturningDate = req.Date.AddMonths(2);
-
-        Entities.Loan loan = new()
-        {
-            Date = req.Date,
-            LoanDate = req.LoanDate,
-            DueDate =  req.DueDate,
-            BookId = req.BookId,
-            MemberId = member.Id,
-        };
-
+        var loan = mapper.Map<Entities.Loan>(req);
 
         bookHiveDbContext.Loans.Add(loan);
         await bookHiveDbContext.SaveChangesAsync(ct);
         
+        var savedLoan = await bookHiveDbContext.Loans
+            .Include(l => l.Book)
+            .Include(l => l.Member)
+            .FirstAsync(l => l.Id == loan.Id, ct);
 
-        var responseDto = new GetLoanDto
-        {
-            Id = loan.Id,
-            Date = loan.Date,
-            BookId = book.Id,
-            MemberId = member.Id,
-            LoanDate = loan.LoanDate,
-            DueDate = loan.DueDate,
-        };
+        var responseDto = mapper.Map<GetLoanDto>(savedLoan);
 
         await Send.OkAsync(responseDto, ct);
     }

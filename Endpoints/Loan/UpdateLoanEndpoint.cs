@@ -4,10 +4,11 @@ using BookHive.DTOs.Loan.Response;
 using BookHive.Entities;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Loan;
 
-public class UpdateLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<UpdateLoanDto, GetLoanDto>
+public class UpdateLoanEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) :Endpoint<UpdateLoanDto, GetLoanDto>
 {
     public override void Configure()
     {
@@ -16,56 +17,23 @@ public class UpdateLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<U
 
     public override async Task HandleAsync(UpdateLoanDto req, CancellationToken ct)
     {
-        Entities.Loan? loanToEdit = await bookHiveDbContext
-            .Loans
-            .SingleOrDefaultAsync(l => l.Id == req.Id, cancellationToken: ct);
+        var loan = await bookHiveDbContext.Loans
+            .Include(l => l.Book)
+            .Include(l => l.Member)
+            .FirstOrDefaultAsync(l => l.Id == req.Id, ct);
 
-        if (loanToEdit == null)
+        if (loan == null)
         {
             await Send.NotFoundAsync(ct);
             return;
         }
 
-        List<Book> book = await bookHiveDbContext
-            .Books
-            .Select(b => new Book { Id = b.Id, Title = b.Title })
-            .ToListAsync();
-
-        if (book == null)
-        {
-            await Send.NotFoundAsync();
-            return;
-        }
-
-        List<Entities.Member> user = await bookHiveDbContext
-            .Members
-            .Select(u => new Entities.Member { Id = u.Id, LastName = u.LastName, FirstName = u.FirstName })
-            .ToListAsync();
-
-        if (user == null)
-        {
-            await Send.NotFoundAsync();
-            return;
-        }
-
-        loanToEdit.Date = req.Date;
-        loanToEdit.BookId = req.BookId;
-        loanToEdit.MemberId = req.MemberId;
-        loanToEdit.LoanDate = req.LoanDate;
-        loanToEdit.DueDate = req.DueDate;
+        mapper.Map(req, loan);
 
         await bookHiveDbContext.SaveChangesAsync(ct);
 
-        GetLoanDto responseDto = new()
-        {
-            Id = req.Id,
-            Date = req.Date,
-            BookId = req.BookId,
-            MemberId = req.MemberId,
-            LoanDate = req.LoanDate,
-            DueDate = req.DueDate,
-        };
-
-        await Send.OkAsync(responseDto, ct);
+        var response = mapper.Map<GetLoanDto>(loan);
+        
+        await Send.OkAsync(response, cancellation: ct);
     }
 }

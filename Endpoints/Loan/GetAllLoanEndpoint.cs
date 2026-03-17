@@ -2,10 +2,11 @@ using BookHive;
 using BookHive.DTOs.Loan.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Loan;
 
-public class GetAllLoanEndpoint(BookHiveDbContext bookHiveDbContext) :EndpointWithoutRequest<List<GetLoanDto>>
+public class GetAllLoanEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) :EndpointWithoutRequest<List<GetLoanDto>>
 {
     public override void Configure()
     {
@@ -14,20 +15,12 @@ public class GetAllLoanEndpoint(BookHiveDbContext bookHiveDbContext) :EndpointWi
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        List<GetLoanDto> responseDto = await bookHiveDbContext
-            .Loans
+        var loans = await bookHiveDbContext.Loans
             .Include(l => l.Book)
             .Include(l => l.Member)
-            .Select(l => new GetLoanDto
-            {
-                Id = l.Id,
-                Date = l.Date,
-                BookId = l.BookId,
-                MemberId = l.MemberId,
-                LoanDate = l.LoanDate,
-                DueDate = l.DueDate,
-            }).ToListAsync(ct);
+            .ToListAsync(ct);
 
-        await Send.OkAsync(responseDto, ct);
+        var response = mapper.Map<List<GetLoanDto>>(loans);
+        await Send.OkAsync(response, cancellation: ct);
     }
 }

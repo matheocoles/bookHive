@@ -2,14 +2,15 @@ using BookHive;
 using BookHive.DTOs.Review.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Review;
 
-public class GetBookReviewsEndpoint(BookHiveDbContext bookHiveDbContext) : EndpointWithoutRequest<List<GetReviewDto>>
+public class GetBookReviewsEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : EndpointWithoutRequest<List<GetReviewDto>>
 {
     public override void Configure()
     {
-        Get("/books/{bookId}/reviews"); // Route demandée 
+        Get("/books/{bookId}/reviews");
         AllowAnonymous();
     }
 
@@ -18,18 +19,12 @@ public class GetBookReviewsEndpoint(BookHiveDbContext bookHiveDbContext) : Endpo
         int bookId = Route<int>("bookId");
 
         var reviews = await bookHiveDbContext.Reviews
+            .Include(r => r.Member)
             .Where(r => r.BookId == bookId)
-            .Select(r => new GetReviewDto
-            {
-                Id = r.Id,
-                BookId = r.BookId,
-                MemberId = r.MemberId,
-                Rating = r.Rating,
-                Comment = r.Comment,
-                CreatedAt = r.CreatedAt
-            })
             .ToListAsync(ct);
 
-        await Send.OkAsync(reviews, cancellation: ct);
+        var response = mapper.Map<List<GetReviewDto>>(reviews);
+
+        await Send.OkAsync(response, cancellation: ct);
     }
 }

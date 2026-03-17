@@ -3,10 +3,11 @@ using BookHive.DTOs.Review.Request;
 using BookHive.DTOs.Review.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Review;
 
-public class AddReviewEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<CreateReviewDto, GetReviewDto>
+public class AddReviewEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) : Endpoint<CreateReviewDto, GetReviewDto>
 {
     public override void Configure() => Post("/books/{bookId}/reviews");
 
@@ -28,27 +29,17 @@ public class AddReviewEndpoint(BookHiveDbContext bookHiveDbContext) : Endpoint<C
             return;
         }
 
-        var review = new Entities.Review
-        {
-            BookId = bookId,
-            MemberId = req.MemberId,
-            Rating = req.Rating,
-            Comment = req.Comment,
-        };
+        var review = mapper.Map<Entities.Review>(req);
+        review.BookId = bookId;
 
         bookHiveDbContext.Reviews.Add(review);
         await bookHiveDbContext.SaveChangesAsync(ct);
 
-        var response = new GetReviewDto
-        {
-            Id = review.Id,
-            BookId = review.BookId,
-            MemberId = review.MemberId,
-            Rating = review.Rating,
-            Comment = review.Comment,
-            CreatedAt = review.CreatedAt
-        };
+        var savedReview = await bookHiveDbContext.Reviews
+            .Include(r => r.Member)
+            .Include(r => r.Book)
+            .FirstAsync(r => r.Id == review.Id, ct);
 
-        await Send.OkAsync(response, ct);
+        await Send.OkAsync(mapper.Map<GetReviewDto>(savedReview), ct);
     }
 }

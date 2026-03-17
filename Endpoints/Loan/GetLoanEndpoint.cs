@@ -2,10 +2,11 @@ using BookHive;
 using BookHive.DTOs.Loan.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Loan;
 
-public class GetLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<GetLoanDto>
+public class GetLoanEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) :Endpoint<GetLoanDto>
 {
     public override void Configure()
     {
@@ -14,26 +15,13 @@ public class GetLoanEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<GetL
 
     public override async Task HandleAsync(GetLoanDto req, CancellationToken ct)
     {
-        Entities.Loan? loan = await bookHiveDbContext
-            .Loans
-            .SingleOrDefaultAsync(l => l.Id == req.Id, cancellationToken: ct);
+        var loan = await bookHiveDbContext.Loans
+            .Include(l => l.Book)
+            .Include(l => l.Member)
+            .FirstOrDefaultAsync(l => l.Id == req.Id, ct);
 
-        if (loan == null)
-        {
-            await Send.NotFoundAsync(ct);
-            return;
-        }
+        if (loan == null) { await Send.NotFoundAsync(ct); return; }
 
-        GetLoanDto responseDto = new()
-        {
-            Id = req.Id,
-            Date = loan.Date,
-            BookId = loan.BookId,
-            MemberId =  loan.MemberId,
-            LoanDate = loan.LoanDate,
-            DueDate = loan.DueDate,
-        };
-
-        await Send.OkAsync(responseDto, ct);
+        await Send.OkAsync(mapper.Map<GetLoanDto>(loan), cancellation: ct);
     }
 }
