@@ -3,10 +3,11 @@ using BookHive.DTOs.Member.Request;
 using BookHive.DTOs.Member.Response;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using IMapper = AutoMapper.IMapper;
 
 namespace BookHive.Endpoints.Member;
 
-public class UpdateMemberEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint<UpdateMemberDto, GetMemberDto>
+public class UpdateMemberEndpoint(BookHiveDbContext bookHiveDbContext, IMapper mapper) :Endpoint<UpdateMemberDto, GetMemberDto>
 {
     public override void Configure()
     {
@@ -15,34 +16,12 @@ public class UpdateMemberEndpoint(BookHiveDbContext bookHiveDbContext) :Endpoint
 
     public override async Task HandleAsync(UpdateMemberDto req, CancellationToken ct)
     {
-        Entities.Member? memberToEdit = await bookHiveDbContext
-            .Members
-            .SingleOrDefaultAsync(a => a.Id == req.Id, cancellationToken: ct);
+        var member = await bookHiveDbContext.Members.FindAsync([req.Id], ct);
+        if (member == null) { await Send.NotFoundAsync(ct); return; }
 
-        if (memberToEdit == null)
-        {
-            await Send.NotFoundAsync(ct);
-            return;
-        }
-
-        memberToEdit.LastName = req.LastName;
-        memberToEdit.FirstName = req.FirstName;
-        memberToEdit.Email = req.Email;
-        memberToEdit.MembershipDate = req.MembershipDate;
-        memberToEdit.IsActive = req.IsActive;
+        mapper.Map(req, member);
 
         await bookHiveDbContext.SaveChangesAsync(ct);
-
-        GetMemberDto responseDto = new()
-        {
-            Id = req.Id,
-            LastName = req.LastName,
-            FirstName = req.FirstName,
-            Email = req.Email,
-            MembershipDate = req.MembershipDate,
-            IsActive = req.IsActive,
-        };
-
-        await Send.OkAsync(responseDto, ct);
+        await Send.OkAsync(mapper.Map<GetMemberDto>(member), cancellation: ct);
     }
 }
