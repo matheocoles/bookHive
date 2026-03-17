@@ -13,6 +13,9 @@ public class MemberProfile : Profile
         CreateMap<CreateMemberDto, Member>();
         CreateMap<UpdateMemberDto, Member>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.Email, opt => opt.PreCondition(src => !string.IsNullOrEmpty(src.Email)));
+            .ForMember(dest => dest.Email, opt => {
+                opt.PreCondition(src => !string.IsNullOrWhiteSpace(src.Email));
+                opt.MapFrom(src => src.Email);
+            });
     }
 }
